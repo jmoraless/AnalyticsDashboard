@@ -1,0 +1,60 @@
+﻿@inject IJSRuntime JS
+
+<div class="card">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">📉 OTS vs Watchers Comparison</h5>
+    </div>
+    <div class="card-body">
+        @if (Data == null)
+        {
+            <div class="text-center py-5">
+                <div class="spinner-border text-info" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading data...</p>
+            </div>
+        }
+        else if (!Data.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <p>No data available</p>
+            </div>
+        }
+        else
+        {
+            <canvas id="comparisonChart" style="width:100%; height:400px;"></canvas>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public List<ComparisonDto>? Data { get; set; }
+
+    private string ChartId => "comparisonChart";
+    private bool _isFirstRender = true;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _isFirstRender = false;
+            return;
+        }
+
+        if (Data != null && Data.Any())
+        {
+            await Task.Delay(100);
+            await RenderChart();
+        }
+    }
+
+    private async Task RenderChart()
+    {
+        var labels = Data!.Select(d => d.Period.ToString("yyyy-MM-dd")).ToArray();
+        var otsValues = Data!.Select(d => d.OtsCount).ToArray();
+        var watcherValues = Data!.Select(d => d.WatcherCount).ToArray();
+
+        await JS.InvokeVoidAsync("chartInterop.renderComparisonChart", ChartId, "OTS vs Watchers", labels, otsValues, watcherValues);
+    }
+}
